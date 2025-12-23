@@ -9,6 +9,7 @@ from powerup import PowerUp
 from effects import Explosion
 from wave_manager import WaveManager
 from sound_manager import SoundManager
+from terrain_manager import TerrainManager
 
 class Game:
     def __init__(self):
@@ -34,6 +35,10 @@ class Game:
 
         # Wave manager
         self.wave_manager = WaveManager()
+
+        # Terrain manager
+        self.terrain_manager = TerrainManager()
+        self.terrain_damage_cooldown = 0  # 地形ダメージのクールダウン
 
         # Score
         self.score = 0
@@ -124,6 +129,8 @@ class Game:
         self.wave_manager.update()
         if self.wave_manager.current_wave != old_wave:
             self.sound_manager.play_wave_change()
+            # Wave変更時に地形マネージャーにも通知
+            self.terrain_manager.set_wave(self.wave_manager.current_wave)
 
         new_enemy = self.wave_manager.spawn_enemy()
         if new_enemy:
@@ -143,6 +150,13 @@ class Game:
         for explosion in self.explosions:
             explosion.update()
         self.explosions = [e for e in self.explosions if e.active]
+
+        # Update terrain
+        self.terrain_manager.update()
+
+        # 地形ダメージクールダウン
+        if self.terrain_damage_cooldown > 0:
+            self.terrain_damage_cooldown -= 1
 
         # Update stars (scrolling background)
         for star in self.stars:
@@ -255,6 +269,18 @@ class Game:
                 elif powerup.powerup_type == POWERUP_TYPE_POWER:
                     self.player.add_power()
 
+        # Terrain collision with player
+        if self.terrain_damage_cooldown <= 0:
+            if self.terrain_manager.check_collision(self.player.rect):
+                if self.player.take_damage():
+                    self.sound_manager.play_player_hit()
+                    self.explosions.append(Explosion(
+                        self.player.x + self.player.width // 2,
+                        self.player.y + self.player.height // 2,
+                        20  # 小さめの爆発
+                    ))
+                    self.terrain_damage_cooldown = TERRAIN_DAMAGE_COOLDOWN
+
     def draw(self):
         # Clear screen
         self.screen.fill(BLACK)
@@ -268,6 +294,9 @@ class Game:
                 (int(star['x']), int(star['y'])),
                 max(1, size)
             )
+
+        # Draw terrain (before player but after stars)
+        self.terrain_manager.draw(self.screen)
 
         # Draw game objects
         self.player.draw(self.screen)
