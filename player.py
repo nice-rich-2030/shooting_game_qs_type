@@ -22,11 +22,15 @@ class Player:
         self.charging = False
         self.charge_time = 0
         self.charge_level = 0
+        self.was_charging = False  # Track charge state for sound triggers
 
         # Invincibility
         self.invincible = False
         self.invincible_timer = 0
         self.blink_timer = 0
+
+        # Sound manager (set by game.py)
+        self.sound_manager = None
 
     def update(self, keys):
         # Movement
@@ -60,6 +64,11 @@ class Player:
 
         # Charge shot logic
         if keys[pygame.K_x]:
+            # Detect charge start
+            if not self.was_charging and self.sound_manager:
+                self.sound_manager.play_charge_start()
+
+            self.was_charging = True
             self.charging = True
             self.charge_time += 1
 
@@ -72,18 +81,28 @@ class Player:
                 self.charge_level = 1
             else:
                 self.charge_level = 0
+
+            # Play charge loop sound
+            if self.sound_manager and self.charge_level > 0:
+                self.sound_manager.play_charge_loop(self.charge_level)
         else:
             # Release charge shot
             if self.charging and self.charge_level > 0:
+                if self.sound_manager:
+                    self.sound_manager.play_charge_release(self.charge_level)
+                    self.sound_manager.stop_charge_loop()
+
                 bullets = [self.create_charge_bullet()]
                 self.charge_time = 0
                 self.charge_level = 0
                 self.charging = False
+                self.was_charging = False
                 return bullets
 
             self.charging = False
             self.charge_time = 0
             self.charge_level = 0
+            self.was_charging = False
 
         return []
 
@@ -91,6 +110,8 @@ class Player:
         """Shoot normal bullets (Z key)"""
         if self.shoot_cooldown <= 0:
             self.shoot_cooldown = self.shoot_delay
+            if self.sound_manager:
+                self.sound_manager.play_player_shoot()
             return [Bullet(self.x + self.width, self.y + self.height // 2 - 2, True, 0)]
         return []
 

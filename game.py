@@ -8,6 +8,7 @@ from bullet import Bullet
 from powerup import PowerUp
 from effects import Explosion
 from wave_manager import WaveManager
+from sound_manager import SoundManager
 
 class Game:
     def __init__(self):
@@ -18,8 +19,12 @@ class Game:
         self.running = True
         self.game_over = False
 
+        # Sound manager
+        self.sound_manager = SoundManager()
+
         # Game objects
         self.player = Player()
+        self.player.sound_manager = self.sound_manager  # Give player access to sound
         self.force = Force()
         self.enemies = []
         self.player_bullets = []
@@ -57,6 +62,11 @@ class Game:
                 # Force toggle
                 if event.key == pygame.K_c:
                     self.force.toggle_state()
+                    self.sound_manager.play_force_toggle()
+
+                # Mute toggle
+                if event.key == pygame.K_m:
+                    self.sound_manager.toggle_mute()
 
                 # Normal shooting (Z key)
                 if event.key == pygame.K_z:
@@ -110,7 +120,11 @@ class Game:
         self.enemy_bullets = [b for b in self.enemy_bullets if b.active]
 
         # Update enemies and spawn new ones
+        old_wave = self.wave_manager.current_wave
         self.wave_manager.update()
+        if self.wave_manager.current_wave != old_wave:
+            self.sound_manager.play_wave_change()
+
         new_enemy = self.wave_manager.spawn_enemy()
         if new_enemy:
             self.enemies.append(new_enemy)
@@ -141,7 +155,8 @@ class Game:
         self.check_collisions()
 
         # Check game over
-        if self.player.lives <= 0:
+        if self.player.lives <= 0 and not self.game_over:
+            self.sound_manager.play_game_over()
             self.game_over = True
 
     def check_collisions(self):
@@ -159,6 +174,7 @@ class Game:
                     if enemy.take_damage(bullet.damage):
                         # Enemy destroyed
                         self.score += enemy.score
+                        self.sound_manager.play_explosion()
                         self.explosions.append(Explosion(
                             enemy.x + enemy.size // 2,
                             enemy.y + enemy.size // 2,
@@ -187,12 +203,14 @@ class Game:
             if self.force.active and self.force.can_absorb_bullets():
                 if bullet.rect.colliderect(self.force.rect):
                     bullet.active = False
+                    self.sound_manager.play_force_absorb()
                     continue
 
             # Check player hit
             if bullet.rect.colliderect(self.player.rect):
                 bullet.active = False
                 if self.player.take_damage():
+                    self.sound_manager.play_player_hit()
                     self.explosions.append(Explosion(
                         self.player.x + self.player.width // 2,
                         self.player.y + self.player.height // 2,
@@ -207,11 +225,13 @@ class Game:
             if enemy.rect.colliderect(self.player.rect):
                 enemy.active = False
                 if self.player.take_damage():
+                    self.sound_manager.play_player_hit()
                     self.explosions.append(Explosion(
                         self.player.x + self.player.width // 2,
                         self.player.y + self.player.height // 2,
                         30
                     ))
+                self.sound_manager.play_explosion()
                 self.explosions.append(Explosion(
                     enemy.x + enemy.size // 2,
                     enemy.y + enemy.size // 2,
@@ -225,6 +245,7 @@ class Game:
 
             if powerup.rect.colliderect(self.player.rect):
                 powerup.active = False
+                self.sound_manager.play_powerup()
 
                 if powerup.powerup_type == POWERUP_TYPE_FORCE:
                     if not self.force.active:
