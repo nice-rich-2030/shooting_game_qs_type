@@ -19,9 +19,12 @@ class PowerUp:
         elif powerup_type == POWERUP_TYPE_SPEED:
             self.color = GREEN
             self.name = "SPEED"
-        else:  # POWERUP_TYPE_POWER
+        elif powerup_type == POWERUP_TYPE_POWER:
             self.color = RED
             self.name = "POWER"
+        else:  # POWERUP_TYPE_3WAY
+            self.color = CYAN
+            self.name = "3WAY"
 
     def update(self):
         if not self.active:

@@ -13,6 +13,7 @@ class Player:
         self.speed = PLAYER_SPEED
         self.lives = PLAYER_MAX_LIVES
         self.power_level = 1
+        self.weapon_type = WEAPON_TYPE_NORMAL  # 射撃タイプ
 
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
@@ -149,11 +150,42 @@ class Player:
     def shoot(self):
         """Shoot normal bullets (Z key)"""
         if self.shoot_cooldown <= 0:
-            self.shoot_cooldown = self.shoot_delay
+            # 武器タイプに応じてクールダウンを設定
+            if self.weapon_type == WEAPON_TYPE_3WAY:
+                self.shoot_cooldown = WEAPON_3WAY_DELAY  # 30 frames
+            else:
+                self.shoot_cooldown = WEAPON_NORMAL_DELAY  # 10 frames
+
             self.recoil_offset = -3  # 反動追加
             if self.sound_manager:
                 self.sound_manager.play_player_shoot()
-            return [Bullet(self.x + self.width, self.y + self.height // 2 - 2, True, 0)]
+
+            bullets = []
+            base_x = self.x + self.width
+            base_y = self.y + self.height // 2
+
+            if self.weapon_type == WEAPON_TYPE_NORMAL:
+                # 通常の水平射撃
+                bullets.append(Bullet(base_x, base_y - 2, True, 0))
+
+            elif self.weapon_type == WEAPON_TYPE_3WAY:
+                # 3方向射撃
+                # 1. 中央（水平）
+                bullets.append(Bullet(base_x, base_y - 2, True, 0))
+
+                # 2. 上40度
+                angle_up = math.radians(WAY3_ANGLE_DEG)
+                vx_up = BULLET_SPEED * math.cos(angle_up)
+                vy_up = -BULLET_SPEED * math.sin(angle_up)  # 上方向は負
+                bullets.append(Bullet(base_x, base_y - 2, True, 0, vx_up, vy_up))
+
+                # 3. 下40度
+                angle_down = math.radians(-WAY3_ANGLE_DEG)
+                vx_down = BULLET_SPEED * math.cos(angle_down)
+                vy_down = -BULLET_SPEED * math.sin(angle_down)  # 下方向は正
+                bullets.append(Bullet(base_x, base_y - 2, True, 0, vx_down, vy_down))
+
+            return bullets
         return []
 
     def create_charge_bullet(self):
@@ -186,6 +218,17 @@ class Player:
     def add_power(self):
         """Power-up: increase power"""
         self.power_level = min(self.power_level + 1, 5)
+
+    def toggle_weapon(self):
+        """武器タイプを切り替え（Vキーで呼ばれる）"""
+        if self.weapon_type == WEAPON_TYPE_NORMAL:
+            self.weapon_type = WEAPON_TYPE_3WAY
+        else:
+            self.weapon_type = WEAPON_TYPE_NORMAL
+
+    def set_weapon_type(self, weapon_type):
+        """武器タイプを設定"""
+        self.weapon_type = weapon_type
 
     def draw(self, screen):
         # Blink effect when invincible

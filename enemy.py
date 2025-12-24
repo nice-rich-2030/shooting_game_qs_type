@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 from constants import *
 from bullet import Bullet
 
@@ -36,13 +37,25 @@ class Enemy:
             self.size = 28
             self.shoot_interval = 0  # Doesn't shoot, just charges
 
-        else:  # ENEMY_TYPE_TANK
+        elif enemy_type == ENEMY_TYPE_TANK:
             self.hp = ENEMY_TANK_HP
             self.speed = ENEMY_TANK_SPEED
             self.score = ENEMY_TANK_SCORE
             self.color = ORANGE
             self.size = 40
             self.shoot_interval = 90  # Shoots every 1.5 seconds
+
+        else:  # ENEMY_TYPE_TURRET
+            self.hp = ENEMY_TURRET_HP
+            self.speed = ENEMY_TURRET_SPEED  # 0
+            self.score = ENEMY_TURRET_SCORE
+            self.color = PURPLE
+            self.size = TURRET_SIZE
+            self.shoot_interval = ENEMY_TURRET_SHOOT_INTERVAL
+
+            # 砲台特有のプロパティ
+            self.is_turret = True
+            self.turret_position = 'ceiling'  # または 'floor'（後で設定）
 
         self.max_hp = self.hp
         self.shoot_cooldown = self.shoot_interval
@@ -56,7 +69,7 @@ class Enemy:
         # For charge movement
         self.target_y = None
 
-    def update(self, player_y):
+    def update(self, player_y, player_x=None):
         if not self.active:
             return []
 
@@ -64,7 +77,11 @@ class Enemy:
         bullets = []
 
         # Movement based on type
-        if self.enemy_type == ENEMY_TYPE_STRAIGHT:
+        if self.enemy_type == ENEMY_TYPE_TURRET:
+            # 砲台は地形と一緒にスクロール
+            self.x -= TERRAIN_SCROLL_SPEED
+
+        elif self.enemy_type == ENEMY_TYPE_STRAIGHT:
             # Simple straight movement
             self.x -= self.speed
 
@@ -107,24 +124,67 @@ class Enemy:
                 self.shoot_cooldown -= 1
             else:
                 self.shoot_cooldown = self.shoot_interval
-                bullets = self.shoot()
+                # 砲台やWAVE型の場合はプレイヤー座標を渡す
+                if self.enemy_type in [ENEMY_TYPE_TURRET, ENEMY_TYPE_WAVE] and player_x is not None:
+                    bullets = self.shoot(player_x, player_y)
+                else:
+                    bullets = self.shoot()
 
         return bullets
 
-    def shoot(self):
+    def shoot(self, player_x=None, player_y=None):
         """Enemy shoots bullets"""
         bullets = []
 
         if self.enemy_type == ENEMY_TYPE_WAVE:
-            # Shoot one bullet to the left
-            bullet = Bullet(self.x, self.y + self.size // 2, False)
+            # 30%の確率でプレイヤー狙い撃ち、70%で通常弾
+            if player_x is not None and player_y is not None and random.random() < AIMED_BULLET_CHANCE_WAVE:
+                from bullet import create_aimed_bullet
+                bullet = create_aimed_bullet(
+                    self.x,
+                    self.y + self.size // 2,
+                    player_x,
+                    player_y,
+                    ENEMY_BULLET_SPEED,
+                    False
+                )
+            else:
+                # 通常の左方向弾
+                bullet = Bullet(self.x, self.y + self.size // 2, False)
             bullets.append(bullet)
 
         elif self.enemy_type == ENEMY_TYPE_TANK:
-            # Shoot three bullets in different directions
-            for angle_offset in [-20, 0, 20]:
-                bullet = Bullet(self.x, self.y + self.size // 2, False)
-                # Modify bullet trajectory slightly (simplified)
+            # 3方向拡散弾（左上、左、左下）
+            base_speed = ENEMY_BULLET_SPEED
+            angles = [-20, 0, 20]  # 度
+
+            for angle_deg in angles:
+                angle_rad = math.radians(angle_deg)
+                vx = -base_speed * math.cos(angle_rad)  # 左方向がベース
+                vy = -base_speed * math.sin(angle_rad)
+
+                bullet = Bullet(
+                    self.x,
+                    self.y + self.size // 2,
+                    False,
+                    0,
+                    vx,
+                    vy
+                )
+                bullets.append(bullet)
+
+        elif self.enemy_type == ENEMY_TYPE_TURRET:
+            # プレイヤー狙い撃ち弾
+            if player_x is not None and player_y is not None:
+                from bullet import create_aimed_bullet
+                bullet = create_aimed_bullet(
+                    self.x + self.size // 2,
+                    self.y + self.size // 2,
+                    player_x,
+                    player_y,
+                    ENEMY_BULLET_SPEED,
+                    False
+                )
                 bullets.append(bullet)
 
         return bullets
@@ -171,7 +231,7 @@ class Enemy:
             pygame.draw.polygon(screen, self.color, points)
             pygame.draw.polygon(screen, WHITE, points, 2)
 
-        else:  # ENEMY_TYPE_TANK
+        elif self.enemy_type == ENEMY_TYPE_TANK:
             # Draw as large rectangle with details
             pygame.draw.rect(screen, self.color, self.rect)
             pygame.draw.rect(screen, WHITE, self.rect, 3)
@@ -182,6 +242,29 @@ class Enemy:
                 (self.x + self.size - 10, self.y + self.size // 2),
                 2
             )
+
+        else:  # ENEMY_TYPE_TURRET
+            # 砲台として描画
+            # ベース（台座）
+            base_rect = pygame.Rect(self.x, self.y, self.size, self.size)
+            pygame.draw.rect(screen, DARK_GRAY, base_rect)
+            pygame.draw.rect(screen, self.color, base_rect, 2)
+
+            # 砲身
+            barrel_length = 15
+            barrel_center_y = self.y + self.size // 2
+
+            pygame.draw.line(
+                screen,
+                self.color,
+                (self.x, barrel_center_y),
+                (self.x - barrel_length, barrel_center_y),
+                4
+            )
+
+            # コア（中心の光）
+            core_center = (int(self.x + self.size // 2), int(barrel_center_y))
+            pygame.draw.circle(screen, RED, core_center, 5)
 
         # Draw HP bar
         if self.hp < self.max_hp:

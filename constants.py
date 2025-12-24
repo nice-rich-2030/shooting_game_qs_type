@@ -16,6 +16,7 @@ YELLOW = (255, 255, 0)
 DARK_GRAY = (40, 40, 40)
 LIGHT_GRAY = (200, 200, 200)
 CYAN = (0, 255, 255)
+PURPLE = (128, 0, 128)  # 砲台用
 
 # Player settings
 PLAYER_WIDTH = 30
@@ -33,6 +34,14 @@ FORCE_DETACHED_SPEED = 2
 FORCE_ATTACHED_FRONT = 0
 FORCE_ATTACHED_BACK = 1
 FORCE_DETACHED = 2
+
+# Force positions (for 3-Force system)
+FORCE_POSITION_CENTER = 0
+FORCE_POSITION_TOP = 1
+FORCE_POSITION_BOTTOM = 2
+
+# Force vertical offset for top/bottom positions
+FORCE_VERTICAL_OFFSET = 35  # pixels above/below center
 
 # Bullet settings
 BULLET_WIDTH = 8
@@ -64,6 +73,7 @@ ENEMY_TYPE_STRAIGHT = 0
 ENEMY_TYPE_WAVE = 1
 ENEMY_TYPE_CHARGE = 2
 ENEMY_TYPE_TANK = 3
+ENEMY_TYPE_TURRET = 4  # 新規：地形固定砲台
 
 # Enemy stats (HP, Speed, Score)
 ENEMY_STRAIGHT_HP = 1
@@ -82,6 +92,12 @@ ENEMY_TANK_HP = 5
 ENEMY_TANK_SPEED = 1
 ENEMY_TANK_SCORE = 500
 
+ENEMY_TURRET_HP = 3
+ENEMY_TURRET_SPEED = 0  # 移動しない
+ENEMY_TURRET_SCORE = 150
+ENEMY_TURRET_SHOOT_INTERVAL = 120  # 2秒
+TURRET_SIZE = 60  # 3倍に拡大（20 → 60）
+
 # Enemy bullet settings
 ENEMY_BULLET_SPEED = 5
 ENEMY_BULLET_WIDTH = 6
@@ -94,6 +110,18 @@ POWERUP_SPEED = 2
 POWERUP_TYPE_FORCE = 0
 POWERUP_TYPE_SPEED = 1
 POWERUP_TYPE_POWER = 2
+POWERUP_TYPE_3WAY = 3  # 新規：3-Way武器
+
+# Player weapon types
+WEAPON_TYPE_NORMAL = 0  # 水平射撃のみ
+WEAPON_TYPE_3WAY = 1    # 3方向射撃
+
+# Player weapon fire rates
+WEAPON_NORMAL_DELAY = 10   # frames
+WEAPON_3WAY_DELAY = 30     # frames (3x slower to balance 3 bullets)
+
+# 3-Way settings
+WAY3_ANGLE_DEG = 40  # 度（上下の弾丸の角度）
 
 # Explosion settings
 EXPLOSION_DURATION = 20  # frames
@@ -125,3 +153,17 @@ TERRAIN_DAMAGE_COOLDOWN = 30  # 地形ダメージのクールダウン（0.5秒
 PATTERN_DURATION_EASY = 600  # 10秒
 PATTERN_DURATION_NORMAL = 480  # 8秒
 PATTERN_DURATION_HARD = 360  # 6秒
+
+# Aimed bullet settings
+AIMED_BULLET_CHANCE_WAVE = 0.3  # WAVE敵の狙い撃ち確率
+
+# Turret spawn chances per wave
+TURRET_SPAWN_CHANCE_WAVE_1 = 0.0
+TURRET_SPAWN_CHANCE_WAVE_2 = 0.2
+TURRET_SPAWN_CHANCE_WAVE_3 = 0.3
+TURRET_SPAWN_CHANCE_WAVE_4 = 0.4
+
+# Turret shoot intervals per wave (frames)
+TURRET_INTERVAL_WAVE_2 = 120  # 2秒
+TURRET_INTERVAL_WAVE_3 = 90   # 1.5秒
+TURRET_INTERVAL_WAVE_4 = 60   # 1秒

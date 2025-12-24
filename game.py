@@ -26,7 +26,17 @@ class Game:
         # Game objects
         self.player = Player()
         self.player.sound_manager = self.sound_manager  # Give player access to sound
-        self.force = Force()
+
+        # === Force system (3-Force support) ===
+        self.forces = []  # Force配列（最大3つ）
+        self.force_count = 0  # 現在有効なForce数
+
+        # 初期化（3つ分作成するが非アクティブ）
+        self.forces.append(Force(FORCE_POSITION_CENTER))
+        self.forces.append(Force(FORCE_POSITION_TOP))
+        self.forces.append(Force(FORCE_POSITION_BOTTOM))
+        # =====================================
+
         self.enemies = []
         self.player_bullets = []
         self.enemy_bullets = []
@@ -64,24 +74,30 @@ class Game:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
 
-                # Force toggle
+                # Force toggle (中央Forceのみ)
                 if event.key == pygame.K_c:
-                    self.force.toggle_state()
-                    self.sound_manager.play_force_toggle()
+                    if self.force_count > 0:
+                        self.forces[FORCE_POSITION_CENTER].toggle_state()
+                        self.sound_manager.play_force_toggle()
 
                 # Mute toggle
                 if event.key == pygame.K_m:
                     self.sound_manager.toggle_mute()
+
+                # Weapon toggle (V key)
+                if event.key == pygame.K_v:
+                    self.player.toggle_weapon()
 
                 # Normal shooting (Z key)
                 if event.key == pygame.K_z:
                     new_bullets = self.player.shoot()
                     self.player_bullets.extend(new_bullets)
 
-                    # Force also shoots
-                    if self.force.active:
-                        force_bullets = self.force.shoot()
-                        self.player_bullets.extend(force_bullets)
+                    # All active Forces also shoot
+                    for force in self.forces:
+                        if force.active:
+                            force_bullets = force.shoot()
+                            self.player_bullets.extend(force_bullets)
 
                 # Restart on game over
                 if self.game_over and event.key == pygame.K_r:
@@ -98,22 +114,25 @@ class Game:
         charge_bullets = self.player.update(keys)
         if charge_bullets:
             self.player_bullets.extend(charge_bullets)
-            # Force also shoots when player releases charge
-            if self.force.active:
-                force_bullets = self.force.shoot()
-                self.player_bullets.extend(force_bullets)
+            # All active Forces shoot when player releases charge
+            for force in self.forces:
+                if force.active:
+                    force_bullets = force.shoot()
+                    self.player_bullets.extend(force_bullets)
 
         # Continuous shooting when Z is held
         if keys[pygame.K_z]:
             new_bullets = self.player.shoot()
             self.player_bullets.extend(new_bullets)
 
-            if self.force.active:
-                force_bullets = self.force.shoot()
-                self.player_bullets.extend(force_bullets)
+            for force in self.forces:
+                if force.active:
+                    force_bullets = force.shoot()
+                    self.player_bullets.extend(force_bullets)
 
-        # Update Force
-        self.force.update(self.player.x, self.player.y, self.player.width, self.player.height)
+        # Update Forces (複数対応)
+        for force in self.forces:
+            force.update(self.player.x, self.player.y, self.player.width, self.player.height)
 
         # Update bullets
         for bullet in self.player_bullets:
@@ -137,7 +156,11 @@ class Game:
             self.enemies.append(new_enemy)
 
         for enemy in self.enemies:
-            new_bullets = enemy.update(self.player.y)
+            # 砲台とWAVE型敵はプレイヤー座標も渡す（狙い撃ち弾のため）
+            if enemy.enemy_type in [ENEMY_TYPE_TURRET, ENEMY_TYPE_WAVE]:
+                new_bullets = enemy.update(self.player.y, self.player.x)
+            else:
+                new_bullets = enemy.update(self.player.y)
             self.enemy_bullets.extend(new_bullets)
         self.enemies = [e for e in self.enemies if e.active]
 
@@ -153,6 +176,10 @@ class Game:
 
         # Update terrain
         self.terrain_manager.update()
+
+        # 地形から新しく生成された砲台を取得
+        new_turrets = self.terrain_manager.get_new_turrets()
+        self.enemies.extend(new_turrets)
 
         # 地形ダメージクールダウン
         if self.terrain_damage_cooldown > 0:
@@ -200,7 +227,8 @@ class Game:
                             powerup_type = random.choice([
                                 POWERUP_TYPE_FORCE,
                                 POWERUP_TYPE_SPEED,
-                                POWERUP_TYPE_POWER
+                                POWERUP_TYPE_POWER,
+                                POWERUP_TYPE_3WAY
                             ])
                             self.powerups.append(PowerUp(
                                 enemy.x,
@@ -213,12 +241,18 @@ class Game:
             if not bullet.active:
                 continue
 
-            # Check Force absorption
-            if self.force.active and self.force.can_absorb_bullets():
-                if bullet.rect.colliderect(self.force.rect):
-                    bullet.active = False
-                    self.sound_manager.play_force_absorb()
-                    continue
+            # Check Force absorption (複数対応)
+            absorbed = False
+            for force in self.forces:
+                if force.active and force.can_absorb_bullets():
+                    if bullet.rect.colliderect(force.rect):
+                        bullet.active = False
+                        self.sound_manager.play_force_absorb()
+                        absorbed = True
+                        break  # 1つのForceが吸収したら次の弾へ
+
+            if absorbed:
+                continue
 
             # Check player hit
             if bullet.rect.colliderect(self.player.rect):
@@ -262,12 +296,23 @@ class Game:
                 self.sound_manager.play_powerup()
 
                 if powerup.powerup_type == POWERUP_TYPE_FORCE:
-                    if not self.force.active:
-                        self.force.activate(self.player.x, self.player.y)
+                    # 3-Force システム
+                    if self.force_count == 0:
+                        # 1つ目: 中央Force有効化
+                        self.forces[FORCE_POSITION_CENTER].activate(self.player.x, self.player.y)
+                        self.force_count = 1
+                    elif self.force_count == 1:
+                        # 2つ目: 上下Force追加
+                        self.forces[FORCE_POSITION_TOP].activate(self.player.x, self.player.y)
+                        self.forces[FORCE_POSITION_BOTTOM].activate(self.player.x, self.player.y)
+                        self.force_count = 3
+                    # 3つ既に取得済みの場合は無視
                 elif powerup.powerup_type == POWERUP_TYPE_SPEED:
                     self.player.add_speed()
                 elif powerup.powerup_type == POWERUP_TYPE_POWER:
                     self.player.add_power()
+                elif powerup.powerup_type == POWERUP_TYPE_3WAY:
+                    self.player.set_weapon_type(WEAPON_TYPE_3WAY)
 
         # Terrain collision with player
         if self.terrain_damage_cooldown <= 0:
@@ -300,7 +345,10 @@ class Game:
 
         # Draw game objects
         self.player.draw(self.screen)
-        self.force.draw(self.screen)
+
+        # Draw Forces (複数対応)
+        for force in self.forces:
+            force.draw(self.screen)
 
         for enemy in self.enemies:
             enemy.draw(self.screen)
@@ -371,10 +419,15 @@ class Game:
                 (gauge_x, gauge_y, charge_width, gauge_height)
             )
 
-        # Force indicator
-        if self.force.active:
-            force_text = self.small_font.render("FORCE: Active", True, ORANGE)
+        # Force indicator (複数対応)
+        if self.force_count > 0:
+            force_text = self.small_font.render(f"FORCE: {self.force_count} Active", True, ORANGE)
             self.screen.blit(force_text, (10, 80))
+
+        # Weapon type indicator
+        weapon_name = "NORMAL" if self.player.weapon_type == WEAPON_TYPE_NORMAL else "3-WAY"
+        weapon_text = self.small_font.render(f"WEAPON: {weapon_name}", True, CYAN)
+        self.screen.blit(weapon_text, (10, 110 if self.force_count > 0 else 80))
 
     def draw_game_over(self):
         # Semi-transparent overlay

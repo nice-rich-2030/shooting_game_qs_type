@@ -3,12 +3,13 @@ from constants import *
 from bullet import Bullet
 
 class Force:
-    def __init__(self):
+    def __init__(self, position=FORCE_POSITION_CENTER):
         self.x = 0
         self.y = 0
         self.size = FORCE_SIZE
         self.state = FORCE_DETACHED  # Start detached (player doesn't have it initially)
         self.active = False  # Force needs to be acquired first
+        self.position = position  # CENTER, TOP, or BOTTOM
 
         self.rect = pygame.Rect(self.x, self.y, self.size, self.size)
 
@@ -21,6 +22,7 @@ class Force:
         self.active = True
         self.x = x
         self.y = y
+        # 中央Forceは切り替え可能、上下Forceは常に前方固定
         self.state = FORCE_ATTACHED_FRONT
         self.rect.x = self.x
         self.rect.y = self.y
@@ -28,6 +30,10 @@ class Force:
     def toggle_state(self):
         """Toggle between attached front, attached back, and detached"""
         if not self.active:
+            return
+
+        # 中央Forceのみ切り替え可能
+        if self.position != FORCE_POSITION_CENTER:
             return
 
         if self.state == FORCE_ATTACHED_FRONT:
@@ -41,16 +47,24 @@ class Force:
         if not self.active:
             return
 
+        # 垂直方向のオフセット計算
+        if self.position == FORCE_POSITION_TOP:
+            y_offset = -FORCE_VERTICAL_OFFSET
+        elif self.position == FORCE_POSITION_BOTTOM:
+            y_offset = FORCE_VERTICAL_OFFSET
+        else:
+            y_offset = 0
+
         # Update position based on state
         if self.state == FORCE_ATTACHED_FRONT:
             # Attach to front of player
             self.x = player_x + player_width + FORCE_ATTACH_DISTANCE - self.size // 2
-            self.y = player_y + player_height // 2 - self.size // 2
+            self.y = player_y + player_height // 2 - self.size // 2 + y_offset
 
         elif self.state == FORCE_ATTACHED_BACK:
             # Attach to back of player
             self.x = player_x - FORCE_ATTACH_DISTANCE - self.size // 2
-            self.y = player_y + player_height // 2 - self.size // 2
+            self.y = player_y + player_height // 2 - self.size // 2 + y_offset
 
         elif self.state == FORCE_DETACHED:
             # Move slowly forward when detached
