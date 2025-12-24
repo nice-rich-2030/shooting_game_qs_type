@@ -60,10 +60,10 @@ CHARGE_LEVEL_3_SIZE = 5
 
 CHARGE_LEVEL_1_DAMAGE = 2
 CHARGE_LEVEL_2_DAMAGE = 3
-CHARGE_LEVEL_3_DAMAGE = 5
+CHARGE_LEVEL_3_DAMAGE = 10
 
 CHARGE_LEVEL_2_PIERCE = 2
-CHARGE_LEVEL_3_PIERCE = 999  # Infinite pierce
+CHARGE_LEVEL_3_PIERCE = 3
 
 # Enemy settings
 ENEMY_SPAWN_INTERVAL = 90  # frames (1.5 seconds)
@@ -74,6 +74,9 @@ ENEMY_TYPE_WAVE = 1
 ENEMY_TYPE_CHARGE = 2
 ENEMY_TYPE_TANK = 3
 ENEMY_TYPE_TURRET = 4  # 新規：地形固定砲台
+ENEMY_TYPE_BOSS_1 = 5  # Wave 1ボス
+ENEMY_TYPE_BOSS_2 = 6  # Wave 2ボス
+ENEMY_TYPE_BOSS_3 = 7  # Wave 3ボス
 
 # Enemy stats (HP, Speed, Score)
 ENEMY_STRAIGHT_HP = 1
@@ -97,6 +100,32 @@ ENEMY_TURRET_SPEED = 0  # 移動しない
 ENEMY_TURRET_SCORE = 150
 ENEMY_TURRET_SHOOT_INTERVAL = 120  # 2秒
 TURRET_SIZE = 60  # 3倍に拡大（20 → 60）
+
+# Boss stats
+BOSS_1_HP = 45  # Wave 1ボス（通常敵の30倍）
+BOSS_1_SPEED = 1
+BOSS_1_SCORE = 1000
+BOSS_1_SIZE = 80
+BOSS_1_SHOOT_INTERVAL = 60  # 1秒ごと
+
+BOSS_2_HP = 75  # Wave 2ボス
+BOSS_2_SPEED = 1.5
+BOSS_2_SCORE = 2000
+BOSS_2_SIZE = 100
+BOSS_2_SHOOT_INTERVAL = 45  # 0.75秒ごと
+
+BOSS_3_HP = 110  # Wave 3ボス
+BOSS_3_SPEED = 2
+BOSS_3_SCORE = 3000
+BOSS_3_SIZE = 120
+BOSS_3_SHOOT_INTERVAL = 30  # 0.5秒ごと
+
+# Wave 4 Boss spawn settings
+WAVE4_MAX_SIMULTANEOUS_BOSSES = 3      # 最大同時ボス数
+WAVE4_MIN_BOSS_INTERVAL = 600          # 最低出現間隔（フレーム）= 10秒
+WAVE4_INITIAL_BOSS_CHANCE = 0.05       # 初期出現確率（5%）
+WAVE4_MAX_BOSS_CHANCE = 0.25           # 最大出現確率（25%）
+WAVE4_DIFFICULTY_RAMP_TIME = 7200      # 難易度上昇期間（フレーム）= 120秒
 
 # Enemy bullet settings (タイプ別)
 ENEMY_BULLET_SPEED_WAVE = 3      # WAVE敵の弾速（遅め、狙い撃ち弾があるため）

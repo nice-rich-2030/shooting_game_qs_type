@@ -156,8 +156,8 @@ class Game:
             self.enemies.append(new_enemy)
 
         for enemy in self.enemies:
-            # 砲台とWAVE型敵はプレイヤー座標も渡す（狙い撃ち弾のため）
-            if enemy.enemy_type in [ENEMY_TYPE_TURRET, ENEMY_TYPE_WAVE]:
+            # 砲台、WAVE型敵、ボスはプレイヤー座標も渡す（狙い撃ち弾のため）
+            if enemy.enemy_type in [ENEMY_TYPE_TURRET, ENEMY_TYPE_WAVE, ENEMY_TYPE_BOSS_1, ENEMY_TYPE_BOSS_2, ENEMY_TYPE_BOSS_3]:
                 new_bullets = enemy.update(self.player.y, self.player.x)
             else:
                 new_bullets = enemy.update(self.player.y)
@@ -221,6 +221,10 @@ class Game:
                             enemy.y + enemy.size // 2,
                             enemy.size
                         ))
+
+                        # ボスが倒された場合は次のWaveに進行
+                        if hasattr(enemy, 'is_boss') and enemy.is_boss:
+                            self.wave_manager.on_boss_defeated()
 
                         # Chance to drop powerup
                         if random.random() < 0.2:  # 20% chance
