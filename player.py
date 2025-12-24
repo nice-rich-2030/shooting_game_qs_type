@@ -13,7 +13,12 @@ class Player:
         self.speed = PLAYER_SPEED
         self.lives = PLAYER_MAX_LIVES
         self.power_level = 1
+        self.base_power_level = 1  # 時限効果なしの基本パワーレベル
         self.weapon_type = WEAPON_TYPE_NORMAL  # 射撃タイプ
+
+        # 時限効果タイマー
+        self.power_effect_timer = 0  # POWER効果の残り時間
+        self.way3_effect_timer = 0   # 3-WAY効果の残り時間
 
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
@@ -72,6 +77,19 @@ class Player:
             if self.invincible_timer <= 0:
                 self.invincible = False
                 self.blink_timer = 0
+
+        # Update timed powerup effects
+        if self.power_effect_timer > 0:
+            self.power_effect_timer -= 1
+            if self.power_effect_timer <= 0:
+                # POWER効果が切れた：パワーレベルを元に戻す
+                self.power_level = self.base_power_level
+
+        if self.way3_effect_timer > 0:
+            self.way3_effect_timer -= 1
+            if self.way3_effect_timer <= 0:
+                # 3-WAY効果が切れた：通常射撃に戻す
+                self.weapon_type = WEAPON_TYPE_NORMAL
 
         # === Animation Updates ===
 
@@ -150,11 +168,14 @@ class Player:
     def shoot(self):
         """Shoot normal bullets (Z key)"""
         if self.shoot_cooldown <= 0:
+            # パワーレベルによる連射間隔の短縮（最大3レベルまで）
+            power_multiplier = 0.8 ** min(self.power_level - 1, 3)
+
             # 武器タイプに応じてクールダウンを設定
             if self.weapon_type == WEAPON_TYPE_3WAY:
-                self.shoot_cooldown = WEAPON_3WAY_DELAY  # 30 frames
+                self.shoot_cooldown = int(WEAPON_3WAY_DELAY * power_multiplier)
             else:
-                self.shoot_cooldown = WEAPON_NORMAL_DELAY  # 10 frames
+                self.shoot_cooldown = int(WEAPON_NORMAL_DELAY * power_multiplier)
 
             self.recoil_offset = -3  # 反動追加
             if self.sound_manager:
@@ -216,8 +237,12 @@ class Player:
         self.speed = min(self.speed + 1, 10)
 
     def add_power(self):
-        """Power-up: increase power"""
+        """Power-up: increase power (timed effect)"""
+        # 基本パワーレベルは変更しない
+        # 時限効果として一時的にパワーレベルを上げる
         self.power_level = min(self.power_level + 1, 5)
+        # タイマーを加算（効果時間積み上げ）
+        self.power_effect_timer += POWER_EFFECT_DURATION
 
     def toggle_weapon(self):
         """武器タイプを切り替え（Vキーで呼ばれる）"""
@@ -227,8 +252,11 @@ class Player:
             self.weapon_type = WEAPON_TYPE_NORMAL
 
     def set_weapon_type(self, weapon_type):
-        """武器タイプを設定"""
+        """武器タイプを設定（時限効果）"""
         self.weapon_type = weapon_type
+        # 3-WAYの場合は時限効果タイマーを加算
+        if weapon_type == WEAPON_TYPE_3WAY:
+            self.way3_effect_timer += WAY3_EFFECT_DURATION
 
     def draw(self, screen):
         # Blink effect when invincible

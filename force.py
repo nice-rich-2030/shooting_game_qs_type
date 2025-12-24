@@ -47,23 +47,31 @@ class Force:
         if not self.active:
             return
 
-        # 垂直方向のオフセット計算
+        # オフセット計算（水平方向と垂直方向）
         if self.position == FORCE_POSITION_TOP:
+            x_offset = -5  # 上下Forceはプレイヤーの真上・真下
             y_offset = -FORCE_VERTICAL_OFFSET
         elif self.position == FORCE_POSITION_BOTTOM:
+            x_offset = -5  # 上下Forceはプレイヤーの真上・真下
             y_offset = FORCE_VERTICAL_OFFSET
         else:
+            x_offset = FORCE_ATTACH_DISTANCE  # 中央Forceは前方/後方に配置
             y_offset = 0
 
         # Update position based on state
         if self.state == FORCE_ATTACHED_FRONT:
             # Attach to front of player
-            self.x = player_x + player_width + FORCE_ATTACH_DISTANCE - self.size // 2
+            if self.position == FORCE_POSITION_CENTER:
+                # 中央Forceは前方に配置
+                self.x = player_x + player_width + x_offset - self.size // 2
+            else:
+                # 上下Forceはプレイヤーの真上・真下（水平方向は中央）
+                self.x = player_x + player_width // 2 - self.size // 2
             self.y = player_y + player_height // 2 - self.size // 2 + y_offset
 
         elif self.state == FORCE_ATTACHED_BACK:
             # Attach to back of player
-            self.x = player_x - FORCE_ATTACH_DISTANCE - self.size // 2
+            self.x = player_x - x_offset - self.size // 2
             self.y = player_y + player_height // 2 - self.size // 2 + y_offset
 
         elif self.state == FORCE_DETACHED:

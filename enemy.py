@@ -145,17 +145,24 @@ class Enemy:
                     self.y + self.size // 2,
                     player_x,
                     player_y,
-                    ENEMY_BULLET_SPEED,
+                    ENEMY_BULLET_SPEED_WAVE,  # 速度3に変更
                     False
                 )
             else:
-                # 通常の左方向弾
-                bullet = Bullet(self.x, self.y + self.size // 2, False)
+                # 通常の左方向弾（速度を明示的に指定）
+                bullet = Bullet(
+                    self.x,
+                    self.y + self.size // 2,
+                    False,
+                    0,
+                    -ENEMY_BULLET_SPEED_WAVE,  # 速度3に変更
+                    0
+                )
             bullets.append(bullet)
 
         elif self.enemy_type == ENEMY_TYPE_TANK:
             # 3方向拡散弾（左上、左、左下）
-            base_speed = ENEMY_BULLET_SPEED
+            base_speed = ENEMY_BULLET_SPEED_TANK  # 速度4に変更
             angles = [-20, 0, 20]  # 度
 
             for angle_deg in angles:
@@ -182,7 +189,7 @@ class Enemy:
                     self.y + self.size // 2,
                     player_x,
                     player_y,
-                    ENEMY_BULLET_SPEED,
+                    ENEMY_BULLET_SPEED_TURRET,  # 速度5に変更
                     False
                 )
                 bullets.append(bullet)

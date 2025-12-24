@@ -26,8 +26,8 @@ PLAYER_MAX_LIVES = 3
 PLAYER_INVINCIBILITY_TIME = 2000  # milliseconds
 
 # Force settings
-FORCE_SIZE = 40
-FORCE_ATTACH_DISTANCE = 30
+FORCE_SIZE = 29
+FORCE_ATTACH_DISTANCE = 35
 FORCE_DETACHED_SPEED = 2
 
 # Force states
@@ -41,12 +41,12 @@ FORCE_POSITION_TOP = 1
 FORCE_POSITION_BOTTOM = 2
 
 # Force vertical offset for top/bottom positions
-FORCE_VERTICAL_OFFSET = 35  # pixels above/below center
+FORCE_VERTICAL_OFFSET = 40  # pixels above/below center
 
 # Bullet settings
 BULLET_WIDTH = 8
 BULLET_HEIGHT = 4
-BULLET_SPEED = 10
+BULLET_SPEED = 5
 BULLET_DAMAGE = 1
 
 # Charge shot settings
@@ -98,8 +98,13 @@ ENEMY_TURRET_SCORE = 150
 ENEMY_TURRET_SHOOT_INTERVAL = 120  # 2秒
 TURRET_SIZE = 60  # 3倍に拡大（20 → 60）
 
-# Enemy bullet settings
-ENEMY_BULLET_SPEED = 5
+# Enemy bullet settings (タイプ別)
+ENEMY_BULLET_SPEED_WAVE = 3      # WAVE敵の弾速（遅め、狙い撃ち弾があるため）
+ENEMY_BULLET_SPEED_TANK = 4      # TANK敵の弾速（中速、3方向拡散のため）
+ENEMY_BULLET_SPEED_TURRET = 2   # TURRET砲台の弾速（速め、固定砲台のため）
+
+# 共通設定
+ENEMY_BULLET_SPEED = 5  # 後方互換性のため残す（STRAIGHT/CHARGE用）
 ENEMY_BULLET_WIDTH = 6
 ENEMY_BULLET_HEIGHT = 6
 
@@ -118,10 +123,15 @@ WEAPON_TYPE_3WAY = 1    # 3方向射撃
 
 # Player weapon fire rates
 WEAPON_NORMAL_DELAY = 10   # frames
-WEAPON_3WAY_DELAY = 30     # frames (3x slower to balance 3 bullets)
+WEAPON_3WAY_DELAY = 15  #frames (1.5x slower to balance 3 bullets)
 
 # 3-Way settings
 WAY3_ANGLE_DEG = 40  # 度（上下の弾丸の角度）
+
+# Powerup duration settings
+POWERUP_DURATION_MULTIPLIER = 2  # パワーアップ効果時間の倍率（平均出現間隔の何倍か）
+POWER_EFFECT_DURATION = 2400  # POWER効果の持続時間（フレーム数） = 30秒 × 2 = 60秒
+WAY3_EFFECT_DURATION = 2400   # 3-WAY効果の持続時間（フレーム数） = 30秒 × 2 = 60秒
 
 # Explosion settings
 EXPLOSION_DURATION = 20  # frames

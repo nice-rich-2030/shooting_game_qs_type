@@ -426,8 +426,24 @@ class Game:
 
         # Weapon type indicator
         weapon_name = "NORMAL" if self.player.weapon_type == WEAPON_TYPE_NORMAL else "3-WAY"
-        weapon_text = self.small_font.render(f"WEAPON: {weapon_name}", True, CYAN)
+        if self.player.way3_effect_timer > 0:
+            # 3-WAY効果の残り時間を表示
+            time_left = self.player.way3_effect_timer / FPS
+            weapon_text = self.small_font.render(f"WEAPON: {weapon_name} ({time_left:.1f}s)", True, CYAN)
+        else:
+            weapon_text = self.small_font.render(f"WEAPON: {weapon_name}", True, CYAN)
         self.screen.blit(weapon_text, (10, 110 if self.force_count > 0 else 80))
+
+        # Power level indicator
+        if self.player.power_level > 1:
+            fire_rate = int(100 * (0.8 ** min(self.player.power_level - 1, 3)))
+            if self.player.power_effect_timer > 0:
+                # POWER効果の残り時間を表示
+                time_left = self.player.power_effect_timer / FPS
+                power_text = self.small_font.render(f"POWER: Lv.{self.player.power_level} (Fire Rate: {fire_rate}%) ({time_left:.1f}s)", True, RED)
+            else:
+                power_text = self.small_font.render(f"POWER: Lv.{self.player.power_level} (Fire Rate: {fire_rate}%)", True, RED)
+            self.screen.blit(power_text, (10, 140 if self.force_count > 0 else 110))
 
     def draw_game_over(self):
         # Semi-transparent overlay
